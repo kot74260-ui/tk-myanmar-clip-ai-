@@ -1,3 +1,4 @@
 Flask
 edge-tts
 gunicorn
+groq
