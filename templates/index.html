@@ -1,0 +1,66 @@
+
+<!DOCTYPE html>
+<html lang="my">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TK Myanmar Clip AI</title>
+<style>
+body {
+  font-family: sans-serif;
+  background: #101827;
+  color: white;
+  padding: 20px;
+  margin: 0;
+}
+main {
+  max-width: 500px;
+  margin: 25px auto;
+  background: #1d293b;
+  padding: 22px;
+  border-radius: 18px;
+}
+h1 { color: #55e6a5; text-align: center; }
+label { display: block; margin-top: 18px; }
+input, textarea, select, button {
+  box-sizing: border-box;
+  width: 100%;
+  padding: 13px;
+  margin-top: 8px;
+  border-radius: 9px;
+  font-size: 16px;
+}
+textarea { min-height: 130px; }
+button {
+  background: #20c982;
+  color: #071b13;
+  border: 0;
+  font-weight: bold;
+  margin-top: 22px;
+}
+.note { color: #cbd5e1; font-size: 14px; }
+</style>
+</head>
+<body>
+<main>
+<h1>🎬 TK Myanmar Clip AI</h1>
+<p>ဗီဒီယိုထဲကို မြန်မာ AI အသံထည့်ပြီး MP4 ထုတ်ပါ။</p>
+<form action="/create" method="POST" enctype="multipart/form-data">
+<label>ဗီဒီယိုရွေးပါ (MP4)</label>
+<input type="file" name="video" accept="video/*" required>
+
+<label>မြန်မာစကားပြောစာသား</label>
+<textarea name="script" placeholder="ဒီနေရာမှာ မြန်မာစာသားရေးပါ..." required></textarea>
+
+<label>ဗီဒီယိုအချိုးအစား</label>
+<select name="aspect">
+<option value="9:16">9:16 — TikTok / Reels</option>
+<option value="16:9">16:9 — YouTube</option>
+</select>
+
+<p class="note">ဗီဒီယိုဖိုင် 100 MB အောက်သာ ရွေးပါ။</p>
+<button type="submit">🎙️ အသံထည့်ပြီး MP4 ထုတ်မည်</button>
+</form>
+</main>
+</body>
+</html>
