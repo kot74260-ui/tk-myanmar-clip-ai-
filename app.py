@@ -114,7 +114,7 @@ def create():
             "force_original_aspect_ratio=decrease,"
             f"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2,"
             f"subtitles={subs}:force_style="
-            "'FontName=Noto Sans Myanmar,FontSize=24,"
+            "'FontName=Padauk,FontSize=24,"
             "Outline=2,Shadow=1,Alignment=2,MarginV=45'"
         )
 
