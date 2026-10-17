@@ -1,13 +1,13 @@
-import asyncio
+
+import os
 import subprocess
 import uuid
-import re
 import zipfile
 import io
 import shutil
 from pathlib import Path
 
-import edge_tts
+from groq import Groq
 from flask import Flask, request, send_file, jsonify, render_template
 
 app = Flask(__name__)
@@ -21,46 +21,94 @@ FFMPEG = shutil.which("ffmpeg")
 FFPROBE = shutil.which("ffprobe")
 
 
-def get_duration(path):
-    result = subprocess.run(
-        [FFPROBE, "-v", "error", "-show_entries",
-         "format=duration", "-of", "default=noprint_wrappers=1:nokey=1",
-         str(path)],
-        capture_output=True, text=True, check=True, timeout=60
+def run_command(command, timeout=1800):
+    subprocess.run(
+        command, check=True, capture_output=True,
+        text=True, timeout=timeout
     )
-    return max(float(result.stdout.strip()), 1.0)
 
 
-def make_srt(script, duration, path):
-    text = re.sub(r"\s+", " ", script).strip()
-    chunks = [
-        text[i:i + 35]
-        for i in range(0, len(text), 35)
-    ]
-    if not chunks:
-        chunks = [""]
+def stamp(seconds):
+    ms = max(0, int(seconds * 1000))
+    h, ms = divmod(ms, 3600000)
+    m, ms = divmod(ms, 60000)
+    s, ms = divmod(ms, 1000)
+    return f"{h:02}:{m:02}:{s:02},{ms:03}"
 
-    total_chars = sum(max(len(c), 1) for c in chunks)
-    elapsed = 0.0
-    entries = []
 
-    def stamp(seconds):
-        ms = int(seconds * 1000)
-        h, ms = divmod(ms, 3600000)
-        m, ms = divmod(ms, 60000)
-        s, ms = divmod(ms, 1000)
-        return f"{h:02}:{m:02}:{s:02},{ms:03}"
+def transcribe_audio(audio_path, job):
+    api_key = os.environ.get("GROQ_API_KEY")
+    if not api_key:
+        raise RuntimeError("Render မှာ GROQ_API_KEY မတွေ့ပါ။")
 
-    for i, chunk in enumerate(chunks, 1):
-        part = duration * max(len(chunk), 1) / total_chars
-        start = elapsed
-        end = min(duration, elapsed + part)
-        entries.append(
-            f"{i}\n{stamp(start)} --> {stamp(end)}\n{chunk}\n"
-        )
-        elapsed = end
+    client = Groq(api_key=api_key, timeout=300.0, max_retries=2)
 
-    path.write_text("\n".join(entries), encoding="utf-8")
+    # အသံကို အရွယ်သေးအောင် ပြောင်းပြီး ၁၀ မိနစ်စီခွဲမည်
+    small_audio = UPLOAD / f"{job}_audio.mp3"
+    run_command([
+        FFMPEG, "-y", "-i", str(audio_path),
+        "-vn", "-ac", "1", "-ar", "16000",
+        "-b:a", "48k", str(small_audio)
+    ])
+
+    chunks_dir = UPLOAD / f"{job}_chunks"
+    chunks_dir.mkdir()
+    run_command([
+        FFMPEG, "-y", "-i", str(small_audio),
+        "-f", "segment", "-segment_time", "600",
+        "-reset_timestamps", "1",
+        "-c", "copy", str(chunks_dir / "part_%03d.mp3")
+    ])
+
+    segments = []
+    try:
+        chunks = sorted(chunks_dir.glob("part_*.mp3"))
+        if not chunks:
+            raise RuntimeError("အသံဖိုင် မရရှိပါ။")
+
+        for index, chunk in enumerate(chunks):
+            with open(chunk, "rb") as audio_file:
+                result = client.audio.transcriptions.create(
+                    file=(chunk.name, audio_file.read()),
+                    model="whisper-large-v3-turbo",
+                    response_format="verbose_json",
+                    timestamp_granularities=["segment"],
+                    language="my",
+                    temperature=0
+                )
+
+            offset = index * 600
+            for item in (getattr(result, "segments", None) or []):
+                text = item.text.strip()
+                if text:
+                    segments.append({
+                        "start": float(item.start) + offset,
+                        "end": float(item.end) + offset,
+                        "text": text
+                    })
+
+        if not segments:
+            raise RuntimeError(
+                "အသံမှ စာသားမရပါ။ အသံပါသော ဗီဒီယိုဖြင့် ထပ်စမ်းပါ။"
+            )
+
+        return segments
+
+    finally:
+        small_audio.unlink(missing_ok=True)
+        shutil.rmtree(chunks_dir, ignore_errors=True)
+
+
+def write_srt(segments, path):
+    lines = []
+    for i, item in enumerate(segments, 1):
+        lines.extend([
+            str(i),
+            f"{stamp(item['start'])} --> {stamp(item['end'])}",
+            item["text"],
+            ""
+        ])
+    path.write_text("\n".join(lines), encoding="utf-8")
 
 
 @app.route("/")
@@ -71,64 +119,55 @@ def home():
 @app.route("/create", methods=["POST"])
 def create():
     if not FFMPEG or not FFPROBE:
-        return jsonify(error="FFmpeg မတပ်ဆင်ရသေးပါ။ Dockerfile ကို ပြင်ရန်လိုပါသည်။"), 500
+        return jsonify(error="FFmpeg မတပ်ဆင်ရသေးပါ။"), 500
 
     video = request.files.get("video")
-    script = request.form.get("script", "").strip()
     aspect = request.form.get("aspect", "9:16")
 
     if not video or not video.filename:
         return jsonify(error="ဗီဒီယိုဖိုင် ရွေးပေးပါ။"), 400
-    if not script:
-        return jsonify(error="မြန်မာစာသား ထည့်ပေးပါ။"), 400
+
     if aspect not in ("9:16", "16:9"):
         return jsonify(error="Video format မမှန်ပါ။"), 400
 
     job = uuid.uuid4().hex
     src = UPLOAD / f"{job}_input.mp4"
-    audio = UPLOAD / f"{job}_voice.mp3"
     subs = UPLOAD / f"{job}_subs.srt"
     output = UPLOAD / f"{job}_output.mp4"
 
     try:
         video.save(src)
 
-        async def make_voice():
-            voice = edge_tts.Communicate(
-                script, voice="my-MM-NilarNeural"
-            )
-            await voice.save(str(audio))
-
-        asyncio.run(make_voice())
-
-        duration = get_duration(audio)
-        make_srt(script, duration, subs)
+        # ဗီဒီယိုထဲက စကားကို အလိုအလျောက် စာသားပြောင်းမည်
+        segments = transcribe_audio(src, job)
+        write_srt(segments, subs)
 
         width, height = (
             (1080, 1920) if aspect == "9:16"
             else (1920, 1080)
         )
 
+        subtitle_filter = (
+            f"subtitles={subs}:"
+            "force_style='FontName=Padauk,FontSize=24,"
+            "Outline=2,Shadow=1,Alignment=2,MarginV=45'"
+        )
+
         vf = (
             f"scale={width}:{height}:"
             "force_original_aspect_ratio=decrease,"
             f"pad={width}:{height}:(ow-iw)/2:(oh-ih)/2,"
-            f"subtitles={subs}:force_style="
-            "'FontName=Padauk,FontSize=24,"
-            "Outline=2,Shadow=1,Alignment=2,MarginV=45'"
+            + subtitle_filter
         )
 
-        command = [
-            FFMPEG, "-y", "-i", str(src), "-i", str(audio),
-            "-vf", vf, "-map", "0:v:0", "-map", "1:a:0",
+        run_command([
+            FFMPEG, "-y", "-i", str(src),
+            "-vf", vf,
+            "-map", "0:v:0", "-map", "0:a?",
             "-c:v", "libx264", "-preset", "ultrafast",
             "-c:a", "aac", "-shortest",
             "-movflags", "+faststart", str(output)
-        ]
-
-        subprocess.run(
-            command, check=True, capture_output=True, timeout=1800
-        )
+        ])
 
         memory_file = io.BytesIO()
         with zipfile.ZipFile(
@@ -148,11 +187,12 @@ def create():
     except Exception:
         app.logger.exception("Video creation failed")
         return jsonify(
-            error="မအောင်မြင်ပါ။ Render Logs ကို စစ်ဆေးပါ။"
+            error="မအောင်မြင်ပါ။ Render Logs ကို စစ်ဆေးပါ။ "
+                  "ဗီဒီယိုတိုတစ်ခုဖြင့် ထပ်စမ်းပါ။"
         ), 500
 
     finally:
-        for path in (src, audio, subs, output):
+        for path in (src, subs, output):
             try:
                 path.unlink(missing_ok=True)
             except OSError:
@@ -161,9 +201,7 @@ def create():
 
 @app.errorhandler(413)
 def too_large(error):
-    return jsonify(
-        error="ဗီဒီယိုဖိုင် 500 MB ထက် မကျော်ရပါ။"
-    ), 413
+    return jsonify(error="ဗီဒီယိုဖိုင် 500 MB ထက် မကျော်ရပါ။"), 413
 
 
 if __name__ == "__main__":
