@@ -1,3 +1,5 @@
-fastapi
-uvicorn
-pydantic
+
+Flask
+edge-tts
+imageio-ffmpeg
+gunicorn
