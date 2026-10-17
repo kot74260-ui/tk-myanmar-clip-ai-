@@ -7,6 +7,7 @@ RUN apt-get update && apt-get install -y --no-install-recommends \
     ffmpeg \
     fonts-noto-core \
     fonts-noto-extra \
+    fonts-sil-padauk \
     && rm -rf /var/lib/apt/lists/*
 
 COPY requirements.txt .
