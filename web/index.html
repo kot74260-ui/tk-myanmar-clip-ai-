@@ -1,0 +1,70 @@
+<!DOCTYPE html>
+<html lang="my">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>TK Myanmar Clip AI</title>
+<style>
+*{box-sizing:border-box}
+body{margin:0;padding:20px;background:#10131b;color:#f5f5f5;font-family:Arial,sans-serif}
+.app{max-width:600px;margin:auto}
+h1{text-align:center;color:#8b9cff}
+p{color:#c5c9d5;line-height:1.6}
+.panel{background:#1c2230;border:1px solid #353d50;border-radius:16px;padding:18px;margin:16px 0}
+label{display:block;margin:12px 0 8px}
+input,textarea,select,button{width:100%;padding:13px;border-radius:10px;border:1px solid #49536a;background:#111723;color:white;font-size:16px}
+button{background:#6878ff;border:0;font-weight:bold;margin-top:12px}
+video{width:100%;margin-top:12px;border-radius:10px}
+small{color:#aab2c8}
+.status{white-space:pre-wrap;overflow-wrap:anywhere}
+</style>
+</head>
+<body>
+<main class="app">
+<h1>🎬 TK Myanmar Clip AI</h1>
+<p style="text-align:center">မြန်မာ AI Video Clip Creator</p>
+<div class="panel">
+<h3>📁 ဗီဒီယိုရွေးပါ</h3>
+<label for="videoFile">ဗီဒီယိုဖိုင် (အများဆုံး ၃ မိနစ်)</label>
+<input id="videoFile" type="file" accept="video/*">
+<video id="preview" controls hidden></video>
+<small>ဗီဒီယိုအရွယ်အစားနှင့် Hosting ကန့်သတ်ချက်များ ရှိနိုင်ပါတယ်။</small>
+</div>
+<div class="panel">
+<h3>📝 ဇာတ်ကြောင်းစာသား</h3>
+<textarea id="script" rows="5" placeholder="မြန်မာအသံနဲ့ ပြောစေချင်တဲ့စာသားကို ထည့်ပါ..."></textarea>
+<label for="format">ဗီဒီယိုပုံစံ</label>
+<select id="format">
+<option value="9:16">TikTok / Reels (9:16)</option>
+<option value="16:9">YouTube (16:9)</option>
+</select>
+<button id="send">စာသားစစ်ဆေးမည်</button>
+<p class="status" id="status">ဗီဒီယိုကို ရွေးပြီး ဇာတ်ကြောင်းစာသား ထည့်နိုင်ပါတယ်။</p>
+</div>
+</main>
+<script>
+const file=document.getElementById('videoFile');
+const preview=document.getElementById('preview');
+const status=document.getElementById('status');
+file.addEventListener('change',()=>{
+ const f=file.files[0];
+ if(!f)return;
+ preview.src=URL.createObjectURL(f);
+ preview.hidden=false;
+ preview.onloadedmetadata=()=>{
+  if(preview.duration>180){
+   alert('ဗီဒီယိုသည် ၃ မိနစ်ထက် မကျော်ရပါ။');
+   file.value='';
+   preview.hidden=true;
+  }
+ };
+});
+document.getElementById('send').addEventListener('click',()=>{
+ const text=document.getElementById('script').value.trim();
+ status.textContent=text
+ ?'စာသားကို ထည့်ထားပြီးပါပြီ။ AI Voice၊ Subtitle နှင့် MP4 Export အတွက် Backend ချိတ်ဆက်ရန် လိုအပ်ပါသေးသည်။'
+ :'မြန်မာစာသားကို အရင်ထည့်ပေးပါ။';
+});
+</script>
+</body>
+</html>
