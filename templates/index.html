@@ -1,32 +1,121 @@
+
 <!DOCTYPE html>
 <html lang="my">
 <head>
-<meta charset="UTF-8">
-<meta name="viewport" content="width=device-width, initial-scale=1">
-<title>TK Myanmar Clip AI</title>
-<style>
-*{box-sizing:border-box}body{margin:0;padding:20px;background:#101827;color:white;font-family:Arial,sans-serif}main{max-width:560px;margin:25px auto;padding:24px;background:#1c293b;border-radius:18px}h1{color:#69e3bb;text-align:center}p{line-height:1.7;color:#d3dce8}label{display:block;margin-top:18px;margin-bottom:8px;font-weight:bold}input,textarea,select,button{width:100%;padding:13px;border-radius:9px;font-size:16px}input,textarea,select{background:#101827;color:white;border:1px solid #526176}textarea{min-height:150px;resize:vertical}button{margin-top:22px;border:0;background:#69e3bb;color:#10231d;font-weight:bold;cursor:pointer}button:disabled{opacity:.6}#status{white-space:pre-wrap;overflow-wrap:anywhere;margin-top:18px}.note{font-size:13px;color:#b9c6d6}
-</style>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <title>TK Myanmar Clip AI</title>
+  <style>
+    body {
+      font-family: sans-serif;
+      background: #101827;
+      color: white;
+      padding: 20px;
+      margin: 0;
+    }
+    .card {
+      max-width: 520px;
+      margin: 25px auto;
+      padding: 22px;
+      background: #1e293b;
+      border-radius: 16px;
+    }
+    h2 { text-align: center; }
+    label { display: block; margin-top: 18px; }
+    input, select, button {
+      width: 100%;
+      box-sizing: border-box;
+      padding: 13px;
+      margin-top: 8px;
+      border-radius: 8px;
+      font-size: 16px;
+    }
+    button {
+      background: #16a34a;
+      color: white;
+      border: 0;
+      font-weight: bold;
+      margin-top: 22px;
+    }
+    button:disabled { opacity: 0.6; }
+    #status {
+      white-space: pre-wrap;
+      overflow-wrap: anywhere;
+      margin-top: 16px;
+    }
+    .hint { color: #cbd5e1; font-size: 14px; }
+  </style>
 </head>
 <body>
-<main>
-<h1>TK Myanmar Clip AI</h1>
-<p>ဗီဒီယိုတင်ပါ။ မြန်မာစာသားထည့်ပါ။ AI မြန်မာအသံနှင့် စာတန်းထိုးဖန်တီးပါ။</p>
-<form id="form">
-<label for="video">ဗီဒီယိုဖိုင် (အများဆုံး 500 MB)</label>
-<input id="video" name="video" type="file" accept="video/*" required>
-<p class="note">ဖိုင်ကြီးများအတွက် Hosting ရဲ့ ကန့်သတ်ချက်များလည်း သက်ရောက်နိုင်ပါတယ်။</p>
-<label for="script">မြန်မာစကားပြော စာသား</label>
-<textarea id="script" name="script" placeholder="ဒီနေရာမှာ မြန်မာစာသား ရိုက်ထည့်ပါ..." required></textarea>
-<label for="aspect">ဗီဒီယိုပုံစံ</label>
-<select id="aspect" name="aspect"><option value="9:16">ဒေါင်လိုက် 9:16 (TikTok / Reels)</option><option value="16:9">အလျားလိုက် 16:9 (YouTube)</option></select>
-<button id="submit" type="submit">မြန်မာအသံနှင့် စာတန်းထိုး ဖန်တီးမည်</button>
-</form>
-<p id="status" role="status"></p>
-</main>
-<script>
-const form=document.getElementById("form"),statusBox=document.getElementById("status"),submitButton=document.getElementById("submit");
-form.addEventListener("submit",async(event)=>{event.preventDefault();const video=document.getElementById("video").files[0];if(!video){statusBox.textContent="ဗီဒီယိုဖိုင် ရွေးပေးပါ။";return;}if(video.size>500*1024*1024){statusBox.textContent="ဗီဒီယိုဖိုင် 500 MB ထက် ကျော်နေပါတယ်။";return;}submitButton.disabled=true;statusBox.textContent="ဖန်တီးနေပါတယ်။ ခဏစောင့်ပေးပါ...";try{const response=await fetch("/create",{method:"POST",body:new FormData(form)});if(!response.ok){let message="ဖန်တီးမရပါ။ Render Logs ကို စစ်ဆေးပါ။";try{const data=await response.json();if(data.error)message=data.error;}catch(_){}throw new Error(message);}const blob=await response.blob(),url=URL.createObjectURL(blob),link=document.createElement("a");link.href=url;link.download="TK_Myanmar_Clip_AI.zip";document.body.appendChild(link);link.click();link.remove();URL.revokeObjectURL(url);statusBox.textContent="ပြီးပါပြီ။ ZIP ဖိုင်ကို ဒေါင်းလုဒ်လုပ်နေပါပြီ။";}catch(error){statusBox.textContent="အမှား: "+error.message;}finally{submitButton.disabled=false;}});
-</script>
+  <div class="card">
+    <h2>🎬 TK Myanmar Clip AI</h2>
+    <p>ဗီဒီယိုတင်ပါ။ အသံမှစာသားကို အလိုအလျောက်ထုတ်ပြီး မြန်မာစာတန်းထိုးပေးပါမယ်။</p>
+
+    <form id="form">
+      <label for="video">ဗီဒီယိုဖိုင် ရွေးပါ</label>
+      <input id="video" name="video" type="file"
+             accept="video/*" required>
+
+      <p class="hint">အသံပါသော ဗီဒီယိုတိုတစ်ခုဖြင့် အရင်စမ်းပါ။</p>
+
+      <label for="aspect">ဗီဒီယိုအချိုး</label>
+      <select id="aspect" name="aspect">
+        <option value="9:16">9:16 — TikTok / Reels</option>
+        <option value="16:9">16:9 — YouTube</option>
+      </select>
+
+      <button id="submit" type="submit">
+        စာတန်းထိုးပြီး ဖိုင်ရယူမည်
+      </button>
+    </form>
+
+    <div id="status" role="status"></div>
+  </div>
+
+  <script>
+    const form = document.getElementById("form");
+    const button = document.getElementById("submit");
+    const status = document.getElementById("status");
+
+    form.addEventListener("submit", async function(event) {
+      event.preventDefault();
+
+      button.disabled = true;
+      status.textContent = "လုပ်ဆောင်နေပါပြီ။ ခဏစောင့်ပေးပါ...";
+
+      try {
+        const response = await fetch("/create", {
+          method: "POST",
+          body: new FormData(form)
+        });
+
+        if (!response.ok) {
+          let message = "ဖိုင်ဖန်တီးမရပါ။ Render Logs ကို စစ်ပါ။";
+          try {
+            const data = await response.json();
+            if (data.error) message = data.error;
+          } catch (_) {}
+          throw new Error(message);
+        }
+
+        const blob = await response.blob();
+        const url = URL.createObjectURL(blob);
+        const link = document.createElement("a");
+        link.href = url;
+        link.download = "TK_Myanmar_Clip_AI.zip";
+        document.body.appendChild(link);
+        link.click();
+        link.remove();
+        URL.revokeObjectURL(url);
+
+        status.textContent =
+          "ပြီးပါပြီ။ ZIP ဖိုင်ထဲမှာ ဗီဒီယိုနဲ့ SRT စာတန်းဖိုင် ပါဝင်ပါတယ်။";
+      } catch (error) {
+        status.textContent = "အမှား: " + error.message;
+      } finally {
+        button.disabled = false;
+      }
+    });
+  </script>
 </body>
 </html>
