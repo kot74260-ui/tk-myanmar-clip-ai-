@@ -1,4 +1,3 @@
-
 <!DOCTYPE html>
 <html lang="my">
 <head>
@@ -6,61 +5,28 @@
 <meta name="viewport" content="width=device-width, initial-scale=1">
 <title>TK Myanmar Clip AI</title>
 <style>
-body {
-  font-family: sans-serif;
-  background: #101827;
-  color: white;
-  padding: 20px;
-  margin: 0;
-}
-main {
-  max-width: 500px;
-  margin: 25px auto;
-  background: #1d293b;
-  padding: 22px;
-  border-radius: 18px;
-}
-h1 { color: #55e6a5; text-align: center; }
-label { display: block; margin-top: 18px; }
-input, textarea, select, button {
-  box-sizing: border-box;
-  width: 100%;
-  padding: 13px;
-  margin-top: 8px;
-  border-radius: 9px;
-  font-size: 16px;
-}
-textarea { min-height: 130px; }
-button {
-  background: #20c982;
-  color: #071b13;
-  border: 0;
-  font-weight: bold;
-  margin-top: 22px;
-}
-.note { color: #cbd5e1; font-size: 14px; }
+*{box-sizing:border-box}body{margin:0;padding:20px;background:#101827;color:white;font-family:Arial,sans-serif}main{max-width:560px;margin:25px auto;padding:24px;background:#1c293b;border-radius:18px}h1{color:#69e3bb;text-align:center}p{line-height:1.7;color:#d3dce8}label{display:block;margin-top:18px;margin-bottom:8px;font-weight:bold}input,textarea,select,button{width:100%;padding:13px;border-radius:9px;font-size:16px}input,textarea,select{background:#101827;color:white;border:1px solid #526176}textarea{min-height:150px;resize:vertical}button{margin-top:22px;border:0;background:#69e3bb;color:#10231d;font-weight:bold;cursor:pointer}button:disabled{opacity:.6}#status{white-space:pre-wrap;overflow-wrap:anywhere;margin-top:18px}.note{font-size:13px;color:#b9c6d6}
 </style>
 </head>
 <body>
 <main>
-<h1>🎬 TK Myanmar Clip AI</h1>
-<p>ဗီဒီယိုထဲကို မြန်မာ AI အသံထည့်ပြီး MP4 ထုတ်ပါ။</p>
-<form action="/create" method="POST" enctype="multipart/form-data">
-<label>ဗီဒီယိုရွေးပါ (MP4)</label>
-<input type="file" name="video" accept="video/*" required>
-
-<label>မြန်မာစကားပြောစာသား</label>
-<textarea name="script" placeholder="ဒီနေရာမှာ မြန်မာစာသားရေးပါ..." required></textarea>
-
-<label>ဗီဒီယိုအချိုးအစား</label>
-<select name="aspect">
-<option value="9:16">9:16 — TikTok / Reels</option>
-<option value="16:9">16:9 — YouTube</option>
-</select>
-
-<p class="note">ဗီဒီယိုဖိုင် 100 MB အောက်သာ ရွေးပါ။</p>
-<button type="submit">🎙️ အသံထည့်ပြီး MP4 ထုတ်မည်</button>
+<h1>TK Myanmar Clip AI</h1>
+<p>ဗီဒီယိုတင်ပါ။ မြန်မာစာသားထည့်ပါ။ AI မြန်မာအသံနှင့် စာတန်းထိုးဖန်တီးပါ။</p>
+<form id="form">
+<label for="video">ဗီဒီယိုဖိုင် (အများဆုံး 500 MB)</label>
+<input id="video" name="video" type="file" accept="video/*" required>
+<p class="note">ဖိုင်ကြီးများအတွက် Hosting ရဲ့ ကန့်သတ်ချက်များလည်း သက်ရောက်နိုင်ပါတယ်။</p>
+<label for="script">မြန်မာစကားပြော စာသား</label>
+<textarea id="script" name="script" placeholder="ဒီနေရာမှာ မြန်မာစာသား ရိုက်ထည့်ပါ..." required></textarea>
+<label for="aspect">ဗီဒီယိုပုံစံ</label>
+<select id="aspect" name="aspect"><option value="9:16">ဒေါင်လိုက် 9:16 (TikTok / Reels)</option><option value="16:9">အလျားလိုက် 16:9 (YouTube)</option></select>
+<button id="submit" type="submit">မြန်မာအသံနှင့် စာတန်းထိုး ဖန်တီးမည်</button>
 </form>
+<p id="status" role="status"></p>
 </main>
+<script>
+const form=document.getElementById("form"),statusBox=document.getElementById("status"),submitButton=document.getElementById("submit");
+form.addEventListener("submit",async(event)=>{event.preventDefault();const video=document.getElementById("video").files[0];if(!video){statusBox.textContent="ဗီဒီယိုဖိုင် ရွေးပေးပါ။";return;}if(video.size>500*1024*1024){statusBox.textContent="ဗီဒီယိုဖိုင် 500 MB ထက် ကျော်နေပါတယ်။";return;}submitButton.disabled=true;statusBox.textContent="ဖန်တီးနေပါတယ်။ ခဏစောင့်ပေးပါ...";try{const response=await fetch("/create",{method:"POST",body:new FormData(form)});if(!response.ok){let message="ဖန်တီးမရပါ။ Render Logs ကို စစ်ဆေးပါ။";try{const data=await response.json();if(data.error)message=data.error;}catch(_){}throw new Error(message);}const blob=await response.blob(),url=URL.createObjectURL(blob),link=document.createElement("a");link.href=url;link.download="TK_Myanmar_Clip_AI.zip";document.body.appendChild(link);link.click();link.remove();URL.revokeObjectURL(url);statusBox.textContent="ပြီးပါပြီ။ ZIP ဖိုင်ကို ဒေါင်းလုဒ်လုပ်နေပါပြီ။";}catch(error){statusBox.textContent="အမှား: "+error.message;}finally{submitButton.disabled=false;}});
+</script>
 </body>
 </html>
