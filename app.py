@@ -78,15 +78,23 @@ def transcribe_audio(audio_path, job):
                 )
 
             offset = index * 600
+            
             for item in (getattr(result, "segments", None) or []):
-                text = item.text.strip()
+                if isinstance(item, dict):
+                    text = item.get("text", "").strip()
+                    start = item.get("start", 0)
+                    end = item.get("end", 0)
+                else:
+                    text = item.text.strip()
+                    start = item.start
+                    end = item.end
+
                 if text:
                     segments.append({
-                        "start": float(item.start) + offset,
-                        "end": float(item.end) + offset,
+                        "start": float(start) + offset,
+                        "end": float(end) + offset,
                         "text": text
                     })
-
         if not segments:
             raise RuntimeError(
                 "အသံမှ စာသားမရပါ။ အသံပါသော ဗီဒီယိုဖြင့် ထပ်စမ်းပါ။"
